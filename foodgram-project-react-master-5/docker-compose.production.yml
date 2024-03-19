@@ -1,0 +1,50 @@
+version: '3.3'
+
+volumes:
+  postgres_data:
+  static:
+  media:
+
+services:
+  db:
+    platform: linux/amd64
+    image: postgres:12
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  backend:
+    depends_on:
+      - db
+    platform: linux/amd64
+    image: skrynch/foodgram_backend
+    env_file: .env
+    volumes:
+      - ../backend:/app
+      - ../media:/app/media
+      - ../backend/data:/app/data
+    domainname: backend
+
+  frontend:
+    platform: linux/amd64
+    image: skrynch/foodgram_frontend
+    env_file: .env
+    command: cp -r /app/build/. /usr/share/nginx/html/
+    volumes:
+      - static:/usr/share/nginx/html/
+
+  gateway:
+    depends_on:
+      - backend
+    platform: linux/amd64
+    image: skrynch/foodgram_gateway
+    env_file: .env
+    volumes:
+      - ../backend/static:/app/static
+      - ../backend/media:/app/media
+      - /etc/letsencrypt:/etc/letsencrypt
+    ports:
+      - 80:80
+      - 443:443
