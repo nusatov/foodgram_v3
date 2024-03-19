@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -9,10 +7,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from api.filters import RecipesFilterSet
+from api.filters import RecipesFilterSet, IngredientsFilter
 from api.pagination import LimitPageNumberPagination
 from api.permissions import IsAuthorOrIsAuthenticatedOrReadOnly
-from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag, Recipebook
+from .models import Favorite, Recipe, ShoppingCart, Tag, Recipebook
+from .models import Ingredient
 from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
                           TagSerializer, ShoppingCartSerializer, FavoriteSerializer)
@@ -107,28 +106,23 @@ class RecipeViewSet(viewsets.ModelViewSet):
         file_content = "Список покупок:\n"
         for name, unit, amount in ingredients:
             file_content += f"{name} - {amount} {unit}\n"
-
+        
         response = HttpResponse(file_content, content_type='text/plain')
         response['Content-Disposition'] = (
             'attachment; filename="shopping_list.txt"'
         )
         return response
-        
-        
+
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов."""
     
+    queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
-    
-    def get_queryset(self):
-        queryset = Ingredient.objects.all()
-        name = self.request.query_params.get('name', None)
-        if name is not None:
-            queryset = queryset.filter(name__istartswith=name)
-        return queryset
+    filter_backends = (IngredientsFilter,)
+    search_fields = ('name',)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
