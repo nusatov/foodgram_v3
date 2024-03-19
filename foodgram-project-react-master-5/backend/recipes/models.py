@@ -2,9 +2,10 @@ from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from PIL import Image
+
 from foodgram_backend.enum import (ImageMaxSize, IngredientMaxLength,
                                    RecipeMaxLength, TagMaxLength)
-from PIL import Image
 
 User = get_user_model()
 
