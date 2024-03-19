@@ -3,6 +3,7 @@ from rest_framework import serializers, validators
 
 import users.serializers
 from foodgram_backend.enum import RecipeMaxLength
+
 from .fields import Base64ImageField
 from .models import Favorite, Ingredient, Recipe, Recipebook, ShoppingCart, Tag
 

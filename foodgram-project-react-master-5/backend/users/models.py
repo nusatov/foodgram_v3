@@ -12,7 +12,6 @@ class User(AbstractUser):
     username = models.CharField(
         verbose_name='Имя пользователя',
         max_length=UserMaxLength.USERNAME.value,
-        validators=(username_validation,),
         unique=True,
     )
     first_name = models.CharField(
@@ -30,10 +29,10 @@ class User(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
     class Meta:
-        ordering = ['username', 'email']
+        ordering = ('username', 'email')
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
