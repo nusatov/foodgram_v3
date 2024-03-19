@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
-from foodgram_backend.pagination import LimitPageNumberPagination
+from api.pagination import LimitPageNumberPagination
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError

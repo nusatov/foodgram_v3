@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
-from foodgram_backend.pagination import LimitPageNumberPagination
+from api.pagination import LimitPageNumberPagination
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
