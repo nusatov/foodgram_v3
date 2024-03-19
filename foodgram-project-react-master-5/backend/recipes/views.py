@@ -24,7 +24,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.prefetch_related(
         'ingredients', 'tags'
     ).select_related('author')
-    permission_classes = [IsAuthorOrIsAuthenticatedOrReadOnly]
+    permission_classes = (IsAuthorOrIsAuthenticatedOrReadOnly, )
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
@@ -36,7 +36,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated]
+        permission_classes=(IsAuthenticated,)
     )
     def shopping_cart(self, request, pk=None):
         try:
@@ -87,7 +87,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated]
+        permission_classes=(IsAuthenticated,)
     )
     def favorite(self, request, pk=None):
         user = request.user
@@ -216,7 +216,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get'],
-        permission_classes=[IsAuthenticated]
+        permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
         user = request.user
@@ -253,7 +253,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов."""
 
     serializer_class = IngredientSerializer
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny,)
     pagination_class = None
 
     def get_queryset(self):
