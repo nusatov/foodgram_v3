@@ -88,44 +88,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             response = self._delete_shopping_cart_or_favorite(Favorite, request, pk)
             return response
     
-    def _handle_action(self, model, request, pk):
-        try:
-            recipe = Recipe.objects.get(pk=pk)
-        except Recipe.DoesNotExist:
-            return Response(
-                {'error': 'Несуществующий рецепт'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        user = request.user
-        
-        if request.method == 'POST':
-            obj, created = model.objects.get_or_create(
-                user=user,
-                recipe=recipe
-            )
-            if not created:
-                return Response(
-                    {"error": "Уже в списке"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            serializer = self.get_serializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        elif request.method == 'DELETE':
-            affected_rows, _ = model.objects.filter(
-                user=user,
-                recipe=recipe
-            ).delete()
-            if affected_rows == 0:
-                return Response(
-                    {"error": "Не найдено в списке"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            return Response(status=status.HTTP_204_NO_CONTENT)
-    
     def get_queryset(self):
         user = self.request.user
         queryset = super().get_queryset()
