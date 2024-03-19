@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from api.pagination import LimitPageNumberPagination
 
 from users.models import Subscription, User
-from api.serializers.users import UserReadSerializer, SubscriptionSerializer
+from api.serializers.users import UserReadSerializer, SubscriptionSerializer, FollowerSerializer
 
 
 class UserViewSet(DjoserUserViewSet):
@@ -17,66 +17,38 @@ class UserViewSet(DjoserUserViewSet):
     serializer_class = SubscriptionSerializer
     pagination_class = LimitPageNumberPagination
 
-    def get_permissions(self):
-        if self.action in ('get_current_user',):
-            self.permission_classes = [IsAuthenticated, ]
-        return super().get_permissions()
-
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve', 'get_current_user'):
             return UserReadSerializer
         return super().get_serializer_class()
 
     @action(detail=True, methods=['post', 'delete'], url_path='subscribe',
-            permission_classes=[IsAuthenticated])
+            permission_classes=(IsAuthenticated,))
     def subscribe(self, request, id=None):
-        author = get_object_or_404(User, pk=id)
         user = request.user
 
         if request.method == 'POST':
-            if user == author:
-                return Response({'error': 'Нельзя подписаться на самого себя'},
-                                status=status.HTTP_400_BAD_REQUEST)
+            author = get_object_or_404(User, id=id)
+            serializer = FollowerSerializer(data={'follower': user.id, 'author': author.id}, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            if Subscription.objects.filter(
-                    follower=user,
-                    author=author
-            ).exists():
-                return Response({'error': 'Вы уже подписаны на этого автора'},
-                                status=status.HTTP_400_BAD_REQUEST)
+        # delete
+        subscription = Subscription.objects.filter(
+            follower=user,
+            author=get_object_or_404(User, pk=id)
+        )
+        if not subscription.exists():
+            return Response({'error': 'Подписка не найдена'},
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
 
-            Subscription.objects.create(follower=user, author=author)
-            recipes_limit = request.query_params.get('recipes_limit')
+        subscription.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-            try:
-                recipes_limit = (
-                    int(recipes_limit) if recipes_limit is not None else None
-                )
-            except ValueError:
-                return Response(
-                    {'error': 'Неверный формат для параметра recipes_limit'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            context = {'request': request, 'recipes_limit': recipes_limit,
-                       'is_subscription_request': True}
-            serializer = self.get_serializer(author, context=context)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        elif request.method == 'DELETE':
-            subscription = Subscription.objects.filter(
-                follower=user,
-                author=author
-            )
-            if not subscription.exists():
-                return Response({'error': 'Подписка не найдена'},
-                                status=status.HTTP_400_BAD_REQUEST
-                                )
-
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=False, methods=['get'], url_path='me')
+    @action(detail=False, methods=['get'], url_path='me', permission_classes=(IsAuthenticated,))
     def get_current_user(self, request):
 
         serializer = self.get_serializer(request.user)

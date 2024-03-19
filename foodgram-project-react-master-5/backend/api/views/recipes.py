@@ -69,9 +69,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             return response
         
-        if request.method == 'DELETE':
-            response = self._delete_shopping_cart_or_favorite(ShoppingCart, request, pk)
-            return response
+        response = self._delete_shopping_cart_or_favorite(ShoppingCart, request, pk)
+        return response
     
     @action(
         detail=True,
@@ -79,7 +78,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def favorite(self, request, pk=None):
-        user = request.user
         
         if request.method == 'POST':
             response = self._create_shopping_cart_or_favorite(
@@ -87,9 +85,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             )
             return response
         
-        if request.method == 'DELETE':
-            response = self._delete_shopping_cart_or_favorite(Favorite, request, pk)
-            return response
+        response = self._delete_shopping_cart_or_favorite(Favorite, request, pk)
+        return response
     
     @action(
         detail=False,
