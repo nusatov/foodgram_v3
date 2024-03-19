@@ -1,8 +1,9 @@
 from collections import defaultdict
 
-from django_filters import rest_framework as filters
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django_filters import rest_framework as filters
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 from api.filters import RecipesFilterSet
 from api.pagination import LimitPageNumberPagination
 from api.permissions import IsAuthorOrIsAuthenticatedOrReadOnly
-from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag, Recipebook
 from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
                           TagSerializer, ShoppingCartSerializer, FavoriteSerializer)
@@ -27,6 +28,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorOrIsAuthenticatedOrReadOnly,)
     filterset_class = RecipesFilterSet
     filter_backends = (filters.DjangoFilterBackend,)
+    
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return RecipeReadSerializer
@@ -90,42 +92,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
             response = self._delete_shopping_cart_or_favorite(Favorite, request, pk)
             return response
     
-    
     @action(
         detail=False,
         methods=['get'],
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        user = request.user
-        shopping_cart_recipes = ShoppingCart.objects.filter(
-            user=user
-        ).select_related('recipe')
-        
-        if not shopping_cart_recipes.exists():
-            return Response(
-                {'detail': 'Список покупок пуст.'},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        
-        ingredients_list = defaultdict(int)
-        for cart_item in shopping_cart_recipes:
-            for ingredient in cart_item.recipe.recipebook_set.all():
-                name = ingredient.ingredient.name
-                amount = ingredient.amount
-                unit = ingredient.ingredient.measurement_unit
-                ingredients_list[(name, unit)] += amount
+        ingredients = Recipebook.objects.filter(
+            recipe__shopping_carts__user=request.user
+        ).values_list(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(Sum('amount')).order_by()
         
         file_content = "Список покупок:\n"
-        for (name, unit), amount in ingredients_list.items():
+        for name, unit, amount in ingredients:
             file_content += f"{name} - {amount} {unit}\n"
-        
+
         response = HttpResponse(file_content, content_type='text/plain')
         response['Content-Disposition'] = (
             'attachment; filename="shopping_list.txt"'
         )
         return response
-
+        
+        
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов."""
