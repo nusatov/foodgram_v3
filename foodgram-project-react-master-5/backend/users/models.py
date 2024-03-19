@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
 from foodgram_backend.enum import UserMaxLength
 
 from .validators import username_validation

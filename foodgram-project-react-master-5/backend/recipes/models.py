@@ -5,7 +5,8 @@ from django.db import models
 from PIL import Image
 
 from foodgram_backend.enum import (ImageMaxSize, IngredientMaxLength,
-                                   RecipeMaxLength, TagMaxLength, RecipeCookingTime, RecipeAmount)
+                                   RecipeAmount, RecipeCookingTime,
+                                   RecipeMaxLength, TagMaxLength)
 
 User = get_user_model()
 
