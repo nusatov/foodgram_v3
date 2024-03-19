@@ -168,7 +168,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return image
     
     def validate_tags(self, tags):
-        if tags is None or len(tags) == 0:
+        if not tags:
             raise serializers.ValidationError('Tags must be in recipe')
         if len(set(tags)) != len(tags):
             raise serializers.ValidationError('Tags unique')
@@ -176,7 +176,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return tags
     
     def validate_ingredients(self, ingredients):
-        if ingredients is None or len(ingredients) == 0:
+        if not ingredients:
             raise serializers.ValidationError(
                 'At least one ingredient is required for the recipe'
             )
