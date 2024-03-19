@@ -128,8 +128,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         user = self.context['request'].user
         instance = Recipe.objects.create(author=user, **validated_data)
-        if tags is not None:
-            instance.tags.set(tags)
+        instance.tags.set(tags)
         instance.save()
         batch = []
         for ingredient in ingredients:
