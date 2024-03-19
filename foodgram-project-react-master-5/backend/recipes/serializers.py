@@ -153,14 +153,14 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         tags = validated_data.get('tags')
         ingredients = validated_data.get('ingredients')
         
-        if tags is None:
-            raise serializers.ValidationError('Tags are required')
-        if ingredients is None:
-            raise serializers.ValidationError('Ingredients are required')
+        # if tags is None:
+        #     raise serializers.ValidationError('Tags are required')
+        # if ingredients is None:
+        #     raise serializers.ValidationError('Ingredients are required')
 
         instance.tags.clear()
-        if tags is not None:
-            serializers.ValidationError('Tags must be in recipe')
+        # if tags is not None:
+        #     serializers.ValidationError('Tags must be in recipe')
         instance.tags.set(tags)
         Recipebook.objects.filter(recipe=instance).all().delete()
         
@@ -185,7 +185,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return tags
     
     def validate_ingredients(self, ingredients):
-        if len(ingredients) == 0:
+        if ingredients is None:
             raise serializers.ValidationError(
                 'At least one ingredient is required for the recipe'
             )
@@ -196,6 +196,11 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('Ingredients should be unique')
             ingredient_list.add(ingredient)
         return ingredients
+    
+    def validate(self, data):
+        data['tags'] = self.validate_tags(data.get('tags'))
+        data['ingredients'] = self.validate_ingredients(data.get('ingredients'))
+        return data
     
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
