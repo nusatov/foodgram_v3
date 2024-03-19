@@ -124,26 +124,24 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return RecipeReadSerializer().to_representation(instance)
     
     def create(self, validated_data):
-        print(f'{validated_data=}')
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         user = self.context['request'].user
-        if user.is_authenticated:
-            instance = Recipe.objects.create(author=user, **validated_data)
-            if tags is not None:
-                instance.tags.set(tags)
-            instance.save()
-            batch = []
-            for ingredient in ingredients:
-                batch.append(
-                    Recipebook(
-                        ingredient=ingredient['id'],
-                        recipe_id=instance.id,
-                        amount=ingredient['amount']
-                    )
+        instance = Recipe.objects.create(author=user, **validated_data)
+        if tags is not None:
+            instance.tags.set(tags)
+        instance.save()
+        batch = []
+        for ingredient in ingredients:
+            batch.append(
+                Recipebook(
+                    ingredient=ingredient['id'],
+                    recipe_id=instance.id,
+                    amount=ingredient['amount']
                 )
-            Recipebook.objects.bulk_create(batch)
-            return instance
+            )
+        Recipebook.objects.bulk_create(batch)
+        return instance
     
     def update(self, instance, validated_data):
         tags = validated_data.get('tags')
