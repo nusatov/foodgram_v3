@@ -158,11 +158,6 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         if ingredients is None:
             raise serializers.ValidationError('Ingredients are required')
 
-        request = self.context.get('request', None)
-        if request is None:
-            raise serializers.ValidationError('Bad Error occurs')
-        if instance.author != request.user:
-            raise PermissionDenied('You cannot edit this recipe')
         instance.tags.clear()
         if tags is not None:
             serializers.ValidationError('Tags must be in recipe')
