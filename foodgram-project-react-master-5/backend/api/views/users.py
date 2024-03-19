@@ -8,13 +8,13 @@ from rest_framework.response import Response
 from api.pagination import LimitPageNumberPagination
 
 from users.models import Subscription, User
-from api.serializers.users import UserFollowSerializer, UserReadSerializer
+from api.serializers.users import UserReadSerializer, SubscriptionSerializer
 
 
 class UserViewSet(DjoserUserViewSet):
     """ViewSet для работы с пользователями."""
     queryset = User.objects.all()
-    serializer_class = UserFollowSerializer
+    serializer_class = SubscriptionSerializer
     pagination_class = LimitPageNumberPagination
 
     def get_permissions(self):
@@ -102,14 +102,14 @@ class UserViewSet(DjoserUserViewSet):
             )
 
         if page is not None:
-            serializer = UserFollowSerializer(
+            serializer = SubscriptionSerializer(
                 [subscription.author for subscription in page],
                 many=True,
                 context=context
             )
             return self.get_paginated_response(serializer.data)
 
-        serializer = UserFollowSerializer(
+        serializer = SubscriptionSerializer(
             [subscription.author for subscription in subscriptions],
             many=True,
             context=context
