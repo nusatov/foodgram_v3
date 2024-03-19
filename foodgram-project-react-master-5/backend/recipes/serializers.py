@@ -1,49 +1,11 @@
-import base64
-import imghdr
-import uuid
-
-import six
-from django.core.files.base import ContentFile
-from foodgram_backend.enum import RecipeMaxLength
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 
 import users.serializers
+from foodgram_backend.enum import RecipeMaxLength
+
+from .fields import Base64ImageField
 from .models import Favorite, Ingredient, Recipe, Recipebook, ShoppingCart, Tag
-
-
-class Base64ImageField(serializers.ImageField):
-    """ Поле для обработки изображений в формате Base64. """
-
-    def to_internal_value(self, data):
-        if data == '':
-            return None
-
-        if isinstance(data, six.string_types):
-            if 'base64,' in data:
-                data = data.split('base64,')[1]
-
-            try:
-                decoded_file = base64.b64decode(data)
-            except TypeError:
-                self.fail('invalid_image')
-
-            file_name = str(uuid.uuid4())[:12]
-            file_extension = self.get_file_extension(file_name, decoded_file)
-            complete_file_name = file_name + "." + file_extension
-
-            data = ContentFile(decoded_file, name=complete_file_name)
-
-        return super(Base64ImageField, self).to_internal_value(data)
-
-    def get_file_extension(self, file_name, decoded_file):
-        extension = imghdr.what(file_name, decoded_file)
-        if extension is None:
-            raise serializers.ValidationError(
-                "Не удалось определить формат файла."
-            )
-        extension = "jpg" if extension == "jpeg" else extension
-        return extension
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -85,9 +47,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     author = users.serializers.UserReadSerializer()
     is_in_shopping_cart = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
-    cooking_time = serializers.IntegerField(
-        min_value=1
-    )
     tags = TagSerializer(many=True)
     ingredients = RecipebookSerializer(
         source='recipebook_set',
@@ -115,7 +74,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (
             request is not None
-            and request.user is not None
+            and request.user.is_authenticated
             and Favorite.objects.filter(
                 user=request.user.id, recipe=recipe
             ).exists()
@@ -125,7 +84,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (
             request is not None
-            and request.user is not None
             and request.user.is_authenticated
             and ShoppingCart.objects.filter(
                 user=request.user.id, recipe=recipe
@@ -134,8 +92,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(max_length=RecipeMaxLength.NAME)
-    cooking_time = serializers.IntegerField(min_value=1)
     image = Base64ImageField()
     ingredients = RecipebookSerializer(
         many=True,
