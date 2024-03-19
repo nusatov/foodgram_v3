@@ -2,9 +2,9 @@ from collections import defaultdict
 
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -14,7 +14,7 @@ from api.permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
-                          TagSerializer, UserRecipeSerializer)
+                          TagSerializer, ShoppingCartSerializer, FavoriteSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -33,6 +33,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return ShortRecipeSerializer
         return RecipeCreateUpdateSerializer
 
+    def _create_shopping_cart_or_favorite(self, serializer, request, recipe_id):
+        serializer = serializer(data={'user': request.user.id, 'recipe': recipe_id})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(status=status.HTTP_400_BAD_REQUEST)
     @action(
         detail=True,
         methods=['post', 'delete'],
@@ -41,17 +48,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk=None):
 
         if request.method == 'POST':
-            serializer = UserRecipeSerializer(data={'user': request.user.id, 'recipe': pk})
-            if serializer.is_valid():
-                shopping_cart = serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            response = self._create_shopping_cart_or_favorite(
+                ShoppingCartSerializer, request, pk
+            )
+            return response
 
         elif request.method == 'DELETE':
             shopping_cart_entry_deleted, _ = ShoppingCart.objects.filter(
                 user=request.user,
-                recipe=Recipe.objects.get(pk=pk)
+                recipe=get_object_or_404(Recipe, pk=pk)
             ).delete()
 
             if shopping_cart_entry_deleted != 0:
@@ -70,26 +75,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         user = request.user
 
         if request.method == 'POST':
-            try:
-                recipe = Recipe.objects.get(pk=pk)
-            except Recipe.DoesNotExist:
-                raise ValidationError('Рецепт не существует')
-
-            serializer = self.get_serializer(recipe)
-            _, created = Favorite.objects.get_or_create(
-                user=user,
-                recipe=recipe
+            response = self._create_shopping_cart_or_favorite(
+                FavoriteSerializer, request, pk
             )
+            return response
 
-            if created:
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
-            return Response(
-                {'error': 'Рецепт уже в избранном'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
         elif request.method == 'DELETE':
             try:

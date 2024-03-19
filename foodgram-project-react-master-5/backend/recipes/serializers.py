@@ -229,7 +229,7 @@ class RecipeSubscriptionSerializer(serializers.ModelSerializer):
         return ret
 
 
-class UserRecipeSerializer(serializers.ModelSerializer):
+class ShoppingCartSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ShoppingCart
@@ -242,3 +242,15 @@ class UserRecipeSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return ShortRecipeSerializer(instance.recipe).data
 
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('recipe', 'user')
+        validators = [validators.UniqueTogetherValidator(
+            queryset=Favorite.objects.all(),
+            fields=('recipe', 'user')
+        )]
+    
+    def to_representation(self, instance):
+        return ShortRecipeSerializer(instance.recipe).data
