@@ -123,23 +123,30 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return RecipeReadSerializer().to_representation(instance)
     
+    @staticmethod
+    def _create_recipebooks(ingredients, recipe):
+        batch = []
+        for ingredient in ingredients:
+            batch.append(
+                Recipebook(
+                    ingredient=ingredient['id'],
+                    recipe_id=recipe.id,
+                    amount=ingredient['amount']
+                )
+            )
+        Recipebook.objects.bulk_create(batch)
+    
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         user = self.context['request'].user
         instance = Recipe.objects.create(author=user, **validated_data)
         instance.tags.set(tags)
+        
+        RecipeCreateUpdateSerializer._create_recipebooks(ingredients, instance)
+        
         instance.save()
-        batch = []
-        for ingredient in ingredients:
-            batch.append(
-                Recipebook(
-                    ingredient=ingredient['id'],
-                    recipe_id=instance.id,
-                    amount=ingredient['amount']
-                )
-            )
-        Recipebook.objects.bulk_create(batch)
+        
         return instance
     
     def update(self, instance, validated_data):
@@ -161,13 +168,9 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             serializers.ValidationError('Tags must be in recipe')
         instance.tags.set(tags)
         Recipebook.objects.filter(recipe=instance).all().delete()
-        batch = []
-        for ingredient in ingredients:
-            batch.append(Recipebook(
-                ingredient=ingredient['id'],
-                recipe_id=instance.id,
-                amount=ingredient['amount']))
-        Recipebook.objects.bulk_create(batch)
+        
+        RecipeCreateUpdateSerializer._create_recipebooks(ingredients, instance)
+        
         validated_data.pop('ingredients')
         super().update(instance, validated_data)
         return instance
