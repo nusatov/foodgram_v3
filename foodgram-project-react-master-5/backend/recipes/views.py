@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from django.db.models import Exists, OuterRef
+from django_filters import rest_framework as filters
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from api.filters import RecipesFilterSet
 from api.pagination import LimitPageNumberPagination
 from api.permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
@@ -24,7 +25,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         'ingredients', 'tags'
     ).select_related('author')
     permission_classes = (IsAuthorOrIsAuthenticatedOrReadOnly,)
-    
+    filterset_class = RecipesFilterSet
+    filter_backends = (filters.DjangoFilterBackend,)
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return RecipeReadSerializer
@@ -88,45 +90,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             response = self._delete_shopping_cart_or_favorite(Favorite, request, pk)
             return response
     
-    def get_queryset(self):
-        user = self.request.user
-        queryset = super().get_queryset()
-        tags = self.request.query_params.getlist('tags')
-        in_shopping_cart = self.request.query_params.get('is_in_shopping_cart')
-        is_favorited = self.request.query_params.get('is_favorited')
-        author_id = self.request.query_params.get('author')
-        print("Requested tags:", tags)
-        if tags:
-            queryset = queryset.filter(tags__slug__in=tags).distinct()
-        
-        if in_shopping_cart is not None and user.is_authenticated:
-            if in_shopping_cart == '1':
-                queryset = queryset.filter(shopping_carts__user=user)
-            elif in_shopping_cart == '0':
-                queryset = queryset.exclude(shopping_carts__user=user)
-        
-        if is_favorited is not None and user.is_authenticated:
-            if is_favorited == '1':
-                favorites = Favorite.objects.filter(
-                    user=user,
-                    recipe=OuterRef('pk')
-                )
-                queryset = queryset.annotate(
-                    is_favorited=Exists(favorites)
-                ).filter(is_favorited=True)
-            elif is_favorited == '0':
-                queryset = queryset.annotate(
-                    is_favorited=Exists(Favorite.objects.filter(
-                        user=user,
-                        recipe=OuterRef('pk')
-                    ))
-                ).filter(is_favorited=False)
-        
-        if author_id is not None:
-            queryset = queryset.filter(author__id=author_id)
-        
-        print("Filtered queryset:", queryset)
-        return queryset
     
     @action(
         detail=False,
