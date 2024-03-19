@@ -123,8 +123,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         return RecipeReadSerializer().to_representation(instance)
     
-    @staticmethod
-    def _create_recipebooks(ingredients, recipe):
+    def _create_recipebooks(self, ingredients, recipe):
         batch = []
         for ingredient in ingredients:
             batch.append(
@@ -143,30 +142,22 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         instance = Recipe.objects.create(author=user, **validated_data)
         instance.tags.set(tags)
         
-        RecipeCreateUpdateSerializer._create_recipebooks(ingredients, instance)
+        self._create_recipebooks(ingredients, instance)
         
         instance.save()
         
         return instance
     
     def update(self, instance, validated_data):
-        tags = validated_data.get('tags')
-        ingredients = validated_data.get('ingredients')
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
         
-        # if tags is None:
-        #     raise serializers.ValidationError('Tags are required')
-        # if ingredients is None:
-        #     raise serializers.ValidationError('Ingredients are required')
-
         instance.tags.clear()
-        # if tags is not None:
-        #     serializers.ValidationError('Tags must be in recipe')
         instance.tags.set(tags)
-        Recipebook.objects.filter(recipe=instance).all().delete()
+        instance.ingredients.clear()
         
-        RecipeCreateUpdateSerializer._create_recipebooks(ingredients, instance)
+        self._create_recipebooks(ingredients, instance)
         
-        validated_data.pop('ingredients')
         super().update(instance, validated_data)
         return instance
     
@@ -185,7 +176,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return tags
     
     def validate_ingredients(self, ingredients):
-        if ingredients is None:
+        if ingredients is None or len(ingredients) == 0:
             raise serializers.ValidationError(
                 'At least one ingredient is required for the recipe'
             )
