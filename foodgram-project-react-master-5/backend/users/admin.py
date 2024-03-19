@@ -32,9 +32,10 @@ class UserAdmin(auth_admin.UserAdmin):
 
     empty_value_display = '-пусто-'
 
+    
+    @admin.display(description='Подписан')
     def is_user_subscribed(self, obj):
         return Subscription.objects.filter(author=obj).exists()
-    is_user_subscribed.short_description = 'Подписан'
 
 
 @admin.register(Subscription)
