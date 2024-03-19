@@ -185,9 +185,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if in_shopping_cart is not None and user.is_authenticated:
             if in_shopping_cart == '1':
-                queryset = queryset.filter(shoppingcart__user=user)
+                queryset = queryset.filter(shopping_carts__user=user)
             elif in_shopping_cart == '0':
-                queryset = queryset.exclude(shoppingcart__user=user)
+                queryset = queryset.exclude(shopping_carts__user=user)
 
         if is_favorited is not None and user.is_authenticated:
             if is_favorited == '1':

@@ -5,7 +5,7 @@ from django.db import models
 from PIL import Image
 
 from foodgram_backend.enum import (ImageMaxSize, IngredientMaxLength,
-                                   RecipeMaxLength, TagMaxLength)
+                                   RecipeMaxLength, TagMaxLength, RecipeCookingTime, RecipeAmount)
 
 User = get_user_model()
 
@@ -115,7 +115,7 @@ class Recipe(models.Model):
         help_text='Необходимо указать описание рецепта',
     )
     cooking_time = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(500)],
+        validators=[MinValueValidator(RecipeCookingTime.MIN)],
         verbose_name='Время приготовления в минутах',
         help_text='Необходимо указать время приготовления в минутах',
     )
@@ -188,10 +188,8 @@ class Recipebook(models.Model):
         verbose_name='Рецепт',
     )
     amount = models.PositiveSmallIntegerField(
-        default=1,
         validators=[
-            MinValueValidator(1),
-            MaxValueValidator(100)
+            MinValueValidator(RecipeAmount.MIN),
         ],
         verbose_name='Количество',
     )
@@ -210,8 +208,8 @@ class Recipebook(models.Model):
         return f'{self.ingredient} в {self.recipe} {self.amount}'
 
 
-class Favorite(models.Model):
-    """Модель для добавления рецептов в избранное."""
+
+class UserRecipeBase(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -222,7 +220,14 @@ class Favorite(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
     )
-
+    
+    class Meta:
+        abstract = True
+    
+    
+class Favorite(UserRecipeBase):
+    """Модель для добавления рецептов в избранное."""
+    
     class Meta:
         verbose_name = 'Избранный рецепт'
         verbose_name_plural = 'Избранные рецепты'
@@ -232,22 +237,11 @@ class Favorite(models.Model):
                 name='unique_favorite'
             )
         ]
+        default_related_name = 'favorites'
 
 
-class ShoppingCart(models.Model):
+class ShoppingCart(UserRecipeBase):
     """Модель для добавления рецептов в корзину."""
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь',
-        help_text='Выберите пользователя для добавления в корзину'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт',
-        help_text='Выберите рецепт для добавления в корзину'
-    )
 
     class Meta:
         verbose_name = 'Рецепт в корзине'
@@ -258,6 +252,7 @@ class ShoppingCart(models.Model):
                 name='unique_shopping_cart'
             )
         ]
+        default_related_name = 'shopping_carts'
 
     def __str__(self):
         return (

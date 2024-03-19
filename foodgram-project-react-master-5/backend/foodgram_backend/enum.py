@@ -37,3 +37,12 @@ class ImageMaxSize(Enum):
     """Максимальная длина полей изображения."""
 
     IMAGE_SIZE = 500, 500
+
+
+class RecipeCookingTime(IntEnum):
+    MAX = 32000
+    MIN = 1
+
+
+class RecipeAmount(IntEnum):
+    MIN = 1
