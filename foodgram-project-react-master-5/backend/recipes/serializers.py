@@ -1,11 +1,12 @@
-from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied
+from django.contrib.auth import get_user_model
+from rest_framework import serializers, validators
 
 import users.serializers
 from foodgram_backend.enum import RecipeMaxLength
-
 from .fields import Base64ImageField
 from .models import Favorite, Ingredient, Recipe, Recipebook, ShoppingCart, Tag
+
+User = get_user_model()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -103,7 +104,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
     ingredients = RecipebookInRecipeCreateSerializer(
         many=True,
-        
+    
     )
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -162,7 +163,6 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         super().update(instance, validated_data)
         return instance
     
-
     def validate_image(self, image):
         if not image:
             raise serializers.ValidationError('Image must be in recipe')
@@ -173,7 +173,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Tags must be in recipe')
         if len(set(tags)) != len(tags):
             raise serializers.ValidationError('Tags unique')
-
+        
         return tags
     
     def validate_ingredients(self, ingredients):
@@ -193,7 +193,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         data['tags'] = self.validate_tags(data.get('tags'))
         data['ingredients'] = self.validate_ingredients(data.get('ingredients'))
         return data
-    
+
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
     """ Сериализатор для избранного в рецептах. """
@@ -227,3 +227,18 @@ class RecipeSubscriptionSerializer(serializers.ModelSerializer):
             }
         
         return ret
+
+
+class UserRecipeSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = ShoppingCart
+        fields = ('recipe', 'user')
+        validators = [validators.UniqueTogetherValidator(
+            queryset=ShoppingCart.objects.all(),
+            fields=('recipe', 'user')
+        )]
+        
+    def to_representation(self, instance):
+        return ShortRecipeSerializer(instance.recipe).data
+

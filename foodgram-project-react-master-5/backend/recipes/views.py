@@ -14,7 +14,7 @@ from api.permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from .models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
                           RecipeReadSerializer, ShortRecipeSerializer,
-                          TagSerializer)
+                          TagSerializer, UserRecipeSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -39,42 +39,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def shopping_cart(self, request, pk=None):
-        try:
-            recipe = Recipe.objects.get(pk=pk)
-        except Recipe.DoesNotExist:
-            if request.method == 'POST':
-                return Response(
-                    {'error': 'Рецепт не найден'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            return Response(
-                {'error': 'Рецепт не найден'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        user = request.user
 
         if request.method == 'POST':
-            obj, created = ShoppingCart.objects.get_or_create(
-                user=user,
-                recipe=recipe
-            )
-            serializer = self.get_serializer(recipe)
-            if created:
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
+            serializer = UserRecipeSerializer(data={'user': request.user.id, 'recipe': pk})
+            if serializer.is_valid():
+                shopping_cart = serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            return Response(
-                {'error': 'Рецепт уже в корзине'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         elif request.method == 'DELETE':
             shopping_cart_entry_deleted, _ = ShoppingCart.objects.filter(
-                user=user,
-                recipe=recipe
+                user=request.user,
+                recipe=Recipe.objects.get(pk=pk)
             ).delete()
 
             if shopping_cart_entry_deleted != 0:
