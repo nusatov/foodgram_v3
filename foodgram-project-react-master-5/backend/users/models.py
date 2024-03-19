@@ -1,18 +1,18 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
 from foodgram_backend.enum import UserMaxLength
 
-from .validators import username_validation
-
 
 class User(AbstractUser):
     """Класс пользователей."""
-
+    
     username = models.CharField(
         verbose_name='Имя пользователя',
-        max_length=UserMaxLength.USERNAME.value,
+        max_length=UserMaxLength.USERNAME,
         unique=True,
+        validators=[UnicodeUsernameValidator()]
     )
     first_name = models.CharField(
         verbose_name='Имя',
@@ -27,22 +27,22 @@ class User(AbstractUser):
         unique=True,
         max_length=UserMaxLength.EMAIL.value,
     )
-
+    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
-
+    
     class Meta:
         ordering = ('username', 'email')
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-
+    
     def __str__(self):
         return self.username
 
 
 class Subscription(models.Model):
     """Модель подписок."""
-
+    
     follower = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -57,7 +57,7 @@ class Subscription(models.Model):
         verbose_name='Блогер',
         help_text='Необходимо указать блогера'
     )
-
+    
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
@@ -71,6 +71,6 @@ class Subscription(models.Model):
                 name='unique_subscribe',
             )
         ]
-
+    
     def __str__(self):
         return f'Ваша подписка: {self.follower} на {self.author} осуществлена'

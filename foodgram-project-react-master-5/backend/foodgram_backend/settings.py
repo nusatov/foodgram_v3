@@ -49,8 +49,8 @@ ROOT_URLCONF = 'foodgram_backend.urls'
 DJOSER = {
     'HIDE_USERS': False,
     'SERIALIZERS': {
-        'user': 'users.serializers.UserReadSerializer',
-        'current_user': 'users.serializers.UserReadSerializer',
+        'user': 'api.serializers.users.UserReadSerializer',
+        'current_user': 'api.serializers.users.UserReadSerializer',
     },
 
     'PERMISSIONS': {
