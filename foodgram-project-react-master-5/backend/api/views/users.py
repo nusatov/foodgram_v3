@@ -60,10 +60,6 @@ class UserViewSet(DjoserUserViewSet):
         page = self.paginate_queryset(authors)
         
         context = {'request': request, 'is_subscription_request': True}
-        if 'recipes_limit' in request.query_params:
-            context['recipes_limit'] = int(
-                request.query_params.get('recipes_limit')
-            )
         
         serializer = SubscriptionSerializer(
             page,
