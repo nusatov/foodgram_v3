@@ -56,10 +56,8 @@ class UserViewSet(DjoserUserViewSet):
     def user_subscriptions(self, request):
         user = request.user
         
-        subscriptions = Subscription.objects.filter(
-            follower=user
-        ).select_related('author')
-        page = self.paginate_queryset(subscriptions)
+        authors = User.objects.filter(following__follower=user)
+        page = self.paginate_queryset(authors)
         
         context = {'request': request, 'is_subscription_request': True}
         if 'recipes_limit' in request.query_params:
@@ -67,17 +65,10 @@ class UserViewSet(DjoserUserViewSet):
                 request.query_params.get('recipes_limit')
             )
         
-        if page is not None:
-            serializer = SubscriptionSerializer(
-                [subscription.author for subscription in page],
-                many=True,
-                context=context
-            )
-            return self.get_paginated_response(serializer.data)
-        
         serializer = SubscriptionSerializer(
-            [subscription.author for subscription in subscriptions],
+            page,
             many=True,
             context=context
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
+        
