@@ -6,7 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.pagination import LimitPageNumberPagination
-from api.serializers.users import UserReadSerializer, SubscriptionSerializer, FollowerSerializer
+from api.serializers.users import (FollowerSerializer, SubscriptionSerializer,
+                                   UserReadSerializer)
 from users.models import Subscription, User
 
 

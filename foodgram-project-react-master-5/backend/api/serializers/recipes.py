@@ -2,10 +2,10 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers, validators
 
 import api.serializers.users as users_serializers
-from foodgram_backend.enum import RecipeMaxLength
-
 from api.fields import Base64ImageField
-from recipes.models import Favorite, Ingredient, Recipe, Recipebook, ShoppingCart, Tag
+from foodgram_backend.enum import RecipeMaxLength
+from recipes.models import (Favorite, Ingredient, Recipe, Recipebook,
+                            ShoppingCart, Tag)
 
 User = get_user_model()
 

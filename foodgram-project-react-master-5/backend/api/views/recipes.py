@@ -11,10 +11,12 @@ from api.filters import IngredientsFilter, RecipesFilterSet
 from api.pagination import LimitPageNumberPagination
 from api.permissions import IsAuthorOrIsAuthenticatedOrReadOnly
 from api.serializers.recipes import (FavoriteSerializer, IngredientSerializer,
-                                     RecipeCreateUpdateSerializer, RecipeReadSerializer,
-                                     ShoppingCartSerializer, ShortRecipeSerializer,
-                                     TagSerializer)
-from recipes.models import Favorite, Ingredient, Recipe, Recipebook, ShoppingCart, Tag
+                                     RecipeCreateUpdateSerializer,
+                                     RecipeReadSerializer,
+                                     ShoppingCartSerializer,
+                                     ShortRecipeSerializer, TagSerializer)
+from recipes.models import (Favorite, Ingredient, Recipe, Recipebook,
+                            ShoppingCart, Tag)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
